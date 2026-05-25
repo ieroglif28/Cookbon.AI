@@ -1,0 +1,457 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Cookbon AI — игровой помощник</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #1a1a1a;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: sans-serif;
+            padding: 20px;
+        }
+        .window {
+            background: white;
+            width: 100%;
+            max-width: 850px;
+            padding: 30px 30px 35px;
+            text-align: center;
+            border: none;
+            box-shadow: none;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        .mic-icon {
+            width: 36px;
+            height: 36px;
+            stroke: #1a73e8;
+            stroke-width: 2;
+            fill: none;
+        }
+        .title {
+            font-size: 28px;
+            font-weight: 600;
+            color: black;
+        }
+        .input-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        textarea {
+            flex: 1;
+            padding: 14px;
+            font-size: 16px;
+            font-family: sans-serif;
+            border: 2px solid #ddd;
+            background: white;
+            resize: vertical;
+            outline: none;
+            min-height: 80px;
+        }
+        textarea:focus {
+            border-color: #1a73e8;
+        }
+        .send-btn {
+            background: #1a73e8;
+            border: none;
+            color: white;
+            width: 60px;
+            height: 60px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .send-btn:active {
+            background: #0d5bbf;
+        }
+        .arrow-icon {
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+            font-size: 32px;
+            font-weight: bold;
+        }
+        .answer-box {
+            background: #f5f5f5;
+            padding: 18px;
+            text-align: left;
+            min-height: 120px;
+            margin-top: 10px;
+        }
+        .answer-label {
+            font-size: 12px;
+            color: #777;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        .answer-text {
+            font-size: 16px;
+            line-height: 1.5;
+            color: #1a1a1a;
+            white-space: pre-wrap;
+        }
+        .status {
+            font-size: 13px;
+            color: #888;
+            margin-top: 15px;
+        }
+        .thinking {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+        }
+        .thinking span {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: #bbb;
+            display: inline-block;
+            opacity: 0.3;
+            animation: thinkingDot 1.4s infinite ease-in-out;
+        }
+        .thinking span:nth-child(1) { animation-delay: 0s; }
+        .thinking span:nth-child(2) { animation-delay: 0.2s; }
+        .thinking span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes thinkingDot {
+            0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); background-color: #999; }
+            30% { opacity: 1; transform: scale(1.1); background-color: #5a5a5a; }
+        }
+        .offline-overlay {
+            margin-top: 15px;
+            padding: 16px;
+            background: #f8f8f8;
+            border: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+        .offline-icon {
+            width: 48px;
+            height: 48px;
+        }
+        .offline-text {
+            font-size: 14px;
+            color: #444;
+        }
+        .retry-btn {
+            background: #1a73e8;
+            border: none;
+            color: white;
+            padding: 8px 20px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .retry-btn:active {
+            background: #0d5bbf;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<div class="window">
+    <div class="header">
+        <svg class="mic-icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+            <path d="M19 10v1a7 7 0 0 1-14 0v-1"></path>
+            <line x1="12" y1="19" x2="12" y2="22"></line>
+        </svg>
+        <span class="title">Cookbon AI</span>
+    </div>
+
+    <div class="input-group">
+        <textarea id="userInput" rows="2" placeholder="Напишите вопрос..."></textarea>
+        <button class="send-btn" id="sendBtn">
+            <span class="arrow-icon">→</span>
+        </button>
+    </div>
+
+    <div class="answer-box">
+        <div class="answer-label">Cookbon AI отвечает:</div>
+        <div class="answer-text" id="answerText">Здравствуйте, я Cookbon.AI жду ваш вопрос!</div>
+    </div>
+    <div class="status" id="statusText"></div>
+
+    <div id="offlinePlashka" class="offline-overlay hidden">
+        <svg class="offline-icon" viewBox="0 0 24 24" fill="none" stroke="#d32f2f" stroke-width="2">
+            <line x1="1" y1="1" x2="23" y2="23"></line>
+            <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+            <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+            <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
+            <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+            <path d="M8.53 16.11a4.77 4.77 0 0 1 6.94 0"></path>
+            <line x1="12" y1="20" x2="12.01" y2="20"></line>
+        </svg>
+        <div class="offline-text">К сожалению, отсутствует подключение к интернету</div>
+        <button id="retryConnectionBtn" class="retry-btn">Проверить соединение</button>
+    </div>
+</div>
+
+<script>
+    const userInput = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const answerDiv = document.getElementById('answerText');
+    const statusDiv = document.getElementById('statusText');
+    const offlinePlashka = document.getElementById('offlinePlashka');
+    let synth = window.speechSynthesis;
+    let audioCtx = null;
+    let isOfflineMode = false;
+
+    function isOnline() { return navigator.onLine; }
+
+    function updateOfflineUI() {
+        if (!isOnline()) {
+            isOfflineMode = true;
+            offlinePlashka.classList.remove('hidden');
+            userInput.disabled = true;
+            sendBtn.disabled = true;
+            userInput.style.backgroundColor = '#f0f0f0';
+            sendBtn.style.opacity = '0.5';
+            answerDiv.innerText = 'Нет подключения к интернету. Подключитесь и нажмите "Проверить соединение".';
+            if (synth.speaking) synth.cancel();
+            statusDiv.innerText = '';
+        } else {
+            isOfflineMode = false;
+            offlinePlashka.classList.add('hidden');
+            userInput.disabled = false;
+            sendBtn.disabled = false;
+            userInput.style.backgroundColor = 'white';
+            sendBtn.style.opacity = '1';
+            answerDiv.innerText = 'Здравствуйте, я Cookbon.AI жду ваш вопрос!';
+            statusDiv.innerText = 'Соединение восстановлено';
+            setTimeout(() => {
+                if (statusDiv.innerText === 'Соединение восстановлено') statusDiv.innerText = '';
+            }, 2000);
+        }
+    }
+
+    function initAudio() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        return audioCtx;
+    }
+
+    function playSendSound() {
+        if (isOfflineMode) return;
+        try {
+            const ctx = initAudio();
+            const now = ctx.currentTime;
+            const osc1 = ctx.createOscillator();
+            const gain1 = ctx.createGain();
+            osc1.connect(gain1);
+            gain1.connect(ctx.destination);
+            osc1.type = 'sine';
+            osc1.frequency.value = 523.25;
+            gain1.gain.value = 0.2;
+            osc1.start();
+            gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.15);
+            osc1.stop(now + 0.15);
+            setTimeout(() => {
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.connect(gain2);
+                gain2.connect(ctx.destination);
+                osc2.type = 'sine';
+                osc2.frequency.value = 587.33;
+                gain2.gain.value = 0.2;
+                osc2.start();
+                gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.27);
+                osc2.stop(now + 0.27);
+            }, 120);
+            setTimeout(() => {
+                const osc3 = ctx.createOscillator();
+                const gain3 = ctx.createGain();
+                osc3.connect(gain3);
+                gain3.connect(ctx.destination);
+                osc3.type = 'sine';
+                osc3.frequency.value = 440;
+                gain3.gain.value = 0.25;
+                osc3.start();
+                gain3.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
+                osc3.stop(now + 0.4);
+            }, 240);
+        } catch(e) { console.log("Send sound error"); }
+    }
+
+    let lastKeyTime = 0;
+    function playTypingSound() {
+        if (isOfflineMode) return;
+        try {
+            const now = Date.now();
+            if (now - lastKeyTime < 50) return;
+            lastKeyTime = now;
+            const ctx = initAudio();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.value = 650 + Math.random() * 150;
+            gain.gain.value = 0.08;
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.08);
+            osc.stop(ctx.currentTime + 0.08);
+        } catch(e) { console.log("Typing sound error"); }
+    }
+
+    function startThinking() {
+        statusDiv.innerHTML = '<div class="thinking"><span></span><span></span><span></span></div>';
+    }
+    function stopThinking() { if (statusDiv) statusDiv.innerHTML = ''; }
+
+    function speak(text) {
+        if (synth.speaking) synth.cancel();
+        let utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'ru-RU';
+        utterance.rate = 0.9;
+        synth.speak(utterance);
+    }
+
+    function getResponse(question) {
+        let q = question.toLowerCase();
+
+        if (question.trim() === "Рецепт пельменей") {
+            return "Рецепт пельмешек по-быстрому:\n\n1. Берём кастрюлю, наливаешь воды, чтоб пельмешкам не тесно было. Соли — жменю. Кипятишь, бля.\n2. Как закипело — кидаешь эти пельмени из пакета. Все сразу, не ссыпляй по одному, не на параде.\n3. Мешаешь, чтобы к дну не прилипли, падлы. Ждёшь, пока всплывут.\n4. Как всплыли — засекай ровно 3-4 минуты. Откинь на дуршлаг, чтоб вода стекла.\n\nИ самое главное, запоминай:\n\nКидаешь их обратно в кастрюлю. Кладёшь туда палку сливочного масла (грамм 50, не жмоться). Сверху — сметану пожирнее, прям банку там или полбанки. Всё мешаешь, чтоб белое стало.\n\nА потом садись и хяч, как не в себя! Чтоб за обе щеки, да с хрустом. Запивай сладким чаем из кружки, где трещина. Всё, ты как сытый дракон!";
+        }
+
+        if (q.includes('интересный факт') || q.includes('факт')) {
+            return "Интересный факт: Самая продаваемая игровая приставка в истории — PlayStation 2, было продано более 155 миллионов единиц по всему миру. PS2 вышла в 2000 году и производилась до 2013 года. На этой консоли вышли такие легендарные хиты, как God of War, Shadow of the Colossus, GTA San Andreas и Persona 4. Архитектура PS2 была настолько сложной, что разработчики осваивали её годами, и только к концу жизненного цикла консоли они смогли выжать из неё максимум возможностей.";
+        }
+
+        if (q.includes('привет') || q.includes('здравствуй')) {
+            return "Здравствуйте! Я Cookbon AI — ваш игровой помощник. Я разбираюсь в игровых приставках, помогаю выбирать подарки для внуков, детей, подростков. Я знаю всё про PlayStation 1-5, PSP, PS Vita, Nintendo Switch и Xbox. Спрашивайте меня про цены, характеристики, игры, компактные модели, дорогие и бюджетные варианты.";
+        }
+
+        if (q.includes('список') || q.includes('подобрать')) {
+            return "Вот список лучших игровых приставок:\n\n1. ДЛЯ НАЧИНАЮЩИХ (недорого): Nintendo Switch Lite (от 15000 руб), Xbox Series S (от 22000 руб), б/у PS3 Slim (5000-8000 руб).\n2. ДЛЯ ПОДРОСТКОВ: PS4 Slim (12000-15000 руб), PS4 Pro (18000-22000 руб).\n3. ДЛЯ МАКСИМАЛЬНОЙ ГРАФИКИ: PS5 (от 45000 руб), Xbox Series X (от 50000 руб).\n4. КОМПАКТНЫЕ: Nintendo Switch, PS Vita (б/у 6000-10000 руб), PSP (б/у 3000-7000 руб).\n5. ДЛЯ НОСТАЛЬГИИ: PS1, PS2, Sega Mega Drive.";
+        }
+
+        if (q.includes('ps5') || q.includes('пс5') || q.includes('playstation 5')) {
+            return "PlayStation 5 вышла в 2020 году. Бывает двух версий: с дисководом и цифровая (без дисковода, дешевле на 5000-8000 руб). PS5 оснащена сверхбыстрым SSD, благодаря которому игры загружаются за 2-5 секунд. Контроллер DualSense имеет тактильную отдачу и адаптивные курки. Эксклюзивы: Spider-Man 2, Demon's Souls Remake, God of War Ragnarok, Horizon Forbidden West. Цена сейчас: с дисководом от 45000 руб, цифровая от 38000 руб. Б/у можно найти за 30000-40000 руб. Это лучший выбор для топовой графики.";
+        }
+
+        if (q.includes('ps4') || q.includes('пс4') || q.includes('playstation 4')) {
+            return "PS4 и PS4 Pro — консоли предыдущего поколения, но до сих пор актуальны. PS4 Slim — компактная и тихая, игры выглядят хорошо (1080p). PS4 Pro поддерживает 4K и HDR. Библиотека игр огромна: God of War, Spider-Man, The Last of Us, Horizon Zero Dawn, Bloodborne. Цены сейчас: б/у PS4 Slim от 12000 руб, PS4 Pro от 18000 руб. Отличный бюджетный вариант для подростков. Игры на PS4 стоят недорого (1000-2000 руб на распродажах).";
+        }
+
+        if (q.includes('ps3') || q.includes('пс3') || q.includes('playstation 3')) {
+            return "PS3 вышла в 2006 году. Лучшие игры: The Last of Us, Uncharted, God of War 3, Metal Gear Solid 4, LittleBigPlanet, Red Dead Redemption, GTA V. Модели: fat (первая, перегревается), slim (надёжная), super slim (самая маленькая). Цена на вторичке 5000-10000 рублей. Идеальный вариант для ностальгии или подарок внуку при ограниченном бюджете.";
+        }
+
+        if (q.includes('ps2') || q.includes('пс2') || q.includes('playstation 2')) {
+            return "PS2 — самая продаваемая консоль в истории (155 млн). Легендарные игры: God of War, Shadow of the Colossus, GTA San Andreas, Persona 4, Final Fantasy X. Цена б/у 3000-6000 рублей. Для детей 7-12 лет, которые не зациклены на современной графике, PS2 — отличный и очень бюджетный подарок. Игры на дисках стоят 200-1000 рублей.";
+        }
+
+        if (q.includes('ps1') || q.includes('пс1') || q.includes('playstation 1')) {
+            return "PS1 вышла в 1994 году. Это первая консоль Sony. Легендарные игры: Crash Bandicoot, Final Fantasy VII, Metal Gear Solid, Resident Evil, Tekken 3. Цена б/у 2000-4000 рублей. Графика устарела, но для коллекционеров и фанатов ретро это сокровище. Для современных детей лучше брать PS2, PS3 или PSP.";
+        }
+
+        if (q.includes('psp') || q.includes('go') || q.includes('го') || q.includes('psp go')) {
+            return "PSP вышла в 2004 году. Игры: God of War, GTA Liberty City Stories, Persona 3 Portable, Final Fantasy Crisis Core, Patapon, LocoRoco. PSP Go — компактная модель без дисковода. Цены: обычная PSP 3000-6000 руб, PSP Go 5000-8000 руб. Отлично подходит для детей в дорогу, в школу, в поездки. Можно установить эмуляторы старых консолей.";
+        }
+
+        if (q.includes('vita') || q.includes('вита') || q.includes('ps vita')) {
+            return "PS Vita вышла в 2011 году. Модели: 1000 (OLED-экран) и 2000 (LCD, легче). Лучшие игры: Persona 4 Golden, Uncharted Golden Abyss, Gravity Rush, Killzone Mercenary, Tearaway. Цена б/у 6000-10000 рублей. До сих пор жива благодаря сообществу энтузиастов. Для подростков, которые любят игры в дороге — отличный подарок.";
+        }
+
+        let ageMatch = q.match(/\d{1,2}/);
+        if (q.includes('подростк') || q.includes('в школу') || q.includes('для мультик') || (ageMatch && parseInt(ageMatch[0]) <= 17)) {
+            let age = ageMatch ? ageMatch[0] : 'подростка';
+            return `Для ${age} лет рекомендую:\n\n5-8 лет: Nintendo Switch Lite — много мультяшных игр (Mario, Kirby, Pokémon).\n9-12 лет: PS4 Slim или Xbox Series S — много эксклюзивов и Game Pass.\n13-17 лет: PS5 или Xbox Series X — топовая графика и онлайн-игры с друзьями.\nЕсли бюджет маленький (до 10000 руб) — б/у PS3, PSP или PS Vita. Для мультиков лучше всего Switch или планшет.`;
+        }
+
+        if (q.includes('внук') || q.includes('внучк') || q.includes('сын') || q.includes('дочк') || q.includes('подар')) {
+            return "Выбираете подарок? Вот рекомендации:\n\nДля мальчика 6-10 лет: Nintendo Switch (20000 руб новая, 12000 б/у). Игры: Mario Kart, Zelda, Pokémon.\nДля девочки 7-12 лет: PS Vita (6000-10000 руб) с играми LittleBigPlanet, Tearaway, или Switch с Animal Crossing.\nДля сына-подростка 13-17 лет: PS5 (от 38000 руб) или Xbox Series S (от 22000 руб) с подпиской Game Pass.\nДля дочки-подростка: Switch с Animal Crossing или PS5 с Horizon, Spider-Man.\nЕсли бюджет до 10000 руб: PSP (3000-6000 руб), PS Vita (6000-9000 руб), PS3 Slim (5000-8000 руб).";
+        }
+
+        if (q.includes('недорог') || q.includes('бюджет')) {
+            return "Бюджетные варианты до 10000 рублей:\n1. PSP (3000-6000 руб) — портативная, огромная библиотека игр.\n2. PS Vita (6000-10000 руб) — более современная, сенсорный экран.\n3. PS3 Slim (5000-8000 руб) — полноценная домашняя консоль с HDMI.\n4. Xbox 360 (4000-7000 руб) — альтернатива PS3 с эксклюзивами Halo, Gears of War.\n5. PS2 (3000-6000 руб) — для ностальгии и маленьких детей.\nДля детей до 10 лет PSP будет идеальна: прочная, компактная, не жалко.";
+        }
+
+        if (q.includes('дорог') || q.includes('топов') || q.includes('лучш')) {
+            return "Если бюджет не ограничен:\n1. PS5 (от 45000 руб) — лучшая консоль для топовой графики и эксклюзивов.\n2. Xbox Series X (от 50000 руб) — самый мощный Xbox, 4K, 120 fps, трассировка лучей.\n3. Nintendo Switch OLED (от 25000 руб) — яркий экран, идеален для семьи и портативного режима.\n4. Steam Deck (от 35000 руб) — портативный ПК для игр из Steam.\nРекомендую PS5 + портативную PS Vita для дороги.";
+        }
+
+        if (q.includes('компактн') || q.includes('маленьк')) {
+            return "Самые компактные приставки:\n1. PSP Go — размером с телефон, выдвижной экран.\n2. PS Vita 2000 — тонкая, лёгкая, помещается в карман.\n3. Nintendo Switch Lite — цельная конструкция, без отсоединяемых джойконов.\n4. Game Boy Micro — размером со спичечный коробок.\n5. PlayStation Classic — мини-копия PS1, 15x15 см.\nЛучший современный вариант — Switch Lite или PS Vita.";
+        }
+
+        return "Я не понимаю вас! Пожалуйста, спросите меня про игровые приставки: PlayStation (PS1-PS5), портативные консоли (PSP, PS Vita, Nintendo Switch), подарки для внуков и детей, недорогие и дорогие варианты, компактные модели, интересные факты или возрастные рекомендации. Я обязательно дам длинный и полезный ответ!";
+    }
+
+    function sendMessage() {
+        let question = userInput.value.trim();
+        if (question === "") { statusDiv.innerText = "Напишите вопрос"; return; }
+
+        if (!isOnline()) {
+            const noInternetMsg = "Похоже у вас нет интернета, я без него как вы без рук работать не могу!";
+            answerDiv.innerText = noInternetMsg;
+            statusDiv.innerText = "Нет интернета";
+            speak(noInternetMsg);
+            setTimeout(() => { if (statusDiv.innerText === "Нет интернета") statusDiv.innerText = ""; }, 2000);
+            return;
+        }
+
+        playSendSound();
+        answerDiv.innerText = "";
+        startThinking();
+        if (synth.speaking) synth.cancel();
+
+        setTimeout(() => {
+            stopThinking();
+            let reply = getResponse(question);
+            answerDiv.innerText = reply;
+            statusDiv.innerText = "Готово";
+            speak(reply);
+            setTimeout(() => { if (statusDiv.innerText === "Готово") statusDiv.innerText = ""; }, 1500);
+        }, 2000);
+    }
+
+    document.getElementById('retryConnectionBtn').addEventListener('click', () => {
+        if (navigator.onLine) updateOfflineUI();
+        else alert('Интернет всё ещё отсутствует. Проверьте подключение.');
+    });
+
+    window.addEventListener('online', () => updateOfflineUI());
+    window.addEventListener('offline', () => updateOfflineUI());
+
+    sendBtn.addEventListener('click', sendMessage);
+    userInput.addEventListener('keydown', (e) => {
+        if (!isOfflineMode && (e.key.length === 1 || (e.key >= '0' && e.key <= '9') || (e.key >= 'а' && e.key <= 'я'))) playTypingSound();
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    });
+
+    document.body.addEventListener('click', () => {
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    }, { once: true });
+
+    window.addEventListener('load', () => {
+        updateOfflineUI();
+        if (!isOfflineMode) {
+            let greet = "Здравствуйте, я Cookbon.AI жду ваш вопрос!";
+            answerDiv.innerText = greet;
+            speak(greet);
+        }
+    });
+</script>
+</body>
+</html>
